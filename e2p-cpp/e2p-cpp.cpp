@@ -5,40 +5,21 @@
 
 #include <time.h>
 #include <iostream>
-#include <vector>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui_c.h>
 
-cv::Mat frame;
-cv::Mat outFrame;
+cv::Mat frame, outFrame;
 
-int mx1 = 0, my1 = 0, mx2 = 0, my2 = 0, m_sta = 0;
-int THETA = 120;
-int PHI = 0;
-float FOV = 90;
+int THETA = 0, PHI = 0, FOV = 90;
 int Hd = 320, Wd = 320;
 cv::Mat map_x = cv::Mat::zeros(Hd, Wd, CV_32FC1);
 cv::Mat map_y = cv::Mat::zeros(Hd, Wd, CV_32FC1);
 cv::Mat R, XYZ, Rx, Ry, Rz;
 
-int equ_h;
-int equ_w;
-float equ_cx;
-float equ_cy;
-
-float wFOV;
-float hFOV;
-
-float c_x;
-float c_y;
-
+int equ_h, equ_w;
+float wFOV, hFOV;
 float w_len, h_len;
-
 float x_ = 0, y_ = 0, z_ = 0, r;
-
-cv::Mat X_Arr = cv::Mat::zeros(Hd, Wd, CV_32FC1);
-cv::Mat Y_Arr = cv::Mat::zeros(Hd, Wd, CV_32FC1);
-cv::Mat Z_Arr = cv::Mat::zeros(Hd, Wd, CV_32FC1);
 
 int main()
 {
@@ -46,95 +27,93 @@ int main()
 
 	equ_h = frame.rows;
 	equ_w = frame.cols;
-	equ_cx = equ_w / 2.0;
-	equ_cy = equ_h / 2.0;
 
 	wFOV = FOV;
 	hFOV = Hd * 1.0 / Wd * wFOV;
 
-	c_x = Wd / 2.0;
-	c_y = Hd / 2.0;
-
 	w_len = 2 * std::tan(wFOV * CV_PI / 360.0);
 	h_len = 2 * std::tan(hFOV * CV_PI / 360.0);
-
-	for (size_t x{ 0 }; x < Wd; x++) {
-		for (size_t y{ 0 }; y < Hd; y++) {
-			x_ = 1;
-			y_ = (x * 1.0 / Wd - 0.5) * w_len;
-			z_ = (y * 1.0 / Hd - 0.5) * h_len;
-
-			r = std::sqrt(x_ * x_ + y_ * y_ + z_ * z_);
-
-			X_Arr.at<float>(y, x) = x_ / r;
-			Y_Arr.at<float>(y, x) = y_ / r;
-			Z_Arr.at<float>(y, x) = z_ / r;
-		}
-	}
 
 	//--------------------------------------------------------------------------------------------------------------------
 	clock_t t1, t2;
 	double t_cost;
 
-	map_x = cv::Scalar(0, 0, 0);
-	map_y = cv::Scalar(0, 0, 0);
-
-	x_ = 0, y_ = 0, z_ = 0;
-	XYZ = (cv::Mat_<float>(3, 1) << x_, y_, z_);
-
-	float beta = -PHI * CV_PI / 180.0;
-	float gamma = THETA * CV_PI / 180.0;
-
-	Rx = (cv::Mat_<float>(3, 3) << 1, 0, 0, 0, std::cos(0), -1 * std::sin(0), 0, std::sin(0), std::cos(0));
-	Ry = (cv::Mat_<float>(3, 3) << std::cos(beta), 0, -1 * std::sin(beta), 0, 1, 0, std::sin(beta), 0, std::cos(beta));
-	Rz = (cv::Mat_<float>(3, 3) << std::cos(gamma), -1 * std::sin(gamma), 0, std::sin(gamma), std::cos(gamma), 0, 0, 0, 1);
-	R = Rz * Ry * Rx;
-
-	//std::cout << Rx << "\n";
-	//std::cout << Rx.size() << "\n";
-
-	//std::cout << Ry << "\n";
-	//std::cout << Ry.size() << "\n";
-
-	//std::cout << Rz << "\n";
-	//std::cout << Rz.size() << "\n";
-
-	//std::cout << R << "\n";
-	//std::cout << R.size() << "\n";
-
+	float beta, gamma;
 	float lat, lon;
+	while (1) {
+		map_x = cv::Scalar(0, 0, 0);
+		map_y = cv::Scalar(0, 0, 0);
 
-	t1 = clock();
-	for (size_t x{ 0 }; x < Wd; x++) {
-		for (size_t y{ 0 }; y < Hd; y++) {
-			XYZ.at<float>(0, 0) = X_Arr.at<float>(y, x);
-			XYZ.at<float>(1, 0) = Y_Arr.at<float>(y, x);
-			XYZ.at<float>(2, 0) = Z_Arr.at<float>(y, x);
+		x_ = 0, y_ = 0, z_ = 0;
+		XYZ = (cv::Mat_<float>(3, 1) << x_, y_, z_);
 
-			//std::cout << XYZ << "\n";
-			XYZ = R * XYZ;
-			//std::cout << XYZ << "\n";
-			x_ = XYZ.at<float>(0, 0);
-			y_ = XYZ.at<float>(1, 0);
-			z_ = XYZ.at<float>(2, 0);
+		beta = -PHI * CV_PI / 180.0;
+		gamma = THETA * CV_PI / 180.0;
+		Rx = (cv::Mat_<float>(3, 3) << 1, 0, 0, 0, std::cos(0), -1 * std::sin(0), 0, std::sin(0), std::cos(0));
+		Ry = (cv::Mat_<float>(3, 3) << std::cos(beta), 0, -1 * std::sin(beta), 0, 1, 0, std::sin(beta), 0, std::cos(beta));
+		Rz = (cv::Mat_<float>(3, 3) << std::cos(gamma), -1 * std::sin(gamma), 0, std::sin(gamma), std::cos(gamma), 0, 0, 0, 1);
+		R = Rz * Ry * Rx;
 
-			lon = (std::asin(z_) / CV_PI + 0.5) * equ_h;
-			lat = (std::atan2(y_, x_ + 0.01) / (2 * CV_PI) + 0.5) * equ_w;
+		std::cout << R << "\n\n";
 
-			map_x.at<float>(y, x) = lat;
-			map_y.at<float>(y, x) = lon;
+		t1 = clock();
+		for (size_t x{ 0 }; x < Wd; x++) {
+			for (size_t y{ 0 }; y < Hd; y++) {
+				x_ = 1;
+				y_ = (x * 1.0 / Wd - 0.5) * w_len;
+				z_ = (y * 1.0 / Hd - 0.5) * h_len;
+
+				r = std::sqrt(x_ * x_ + y_ * y_ + z_ * z_);
+
+				XYZ.at<float>(0, 0) = x_ / r;
+				XYZ.at<float>(1, 0) = y_ / r;
+				XYZ.at<float>(2, 0) = z_ / r;
+
+				//std::cout << "\n\n------------------------------------------\n";
+				//std::cout << XYZ << "\n-----------------------\n";
+				XYZ = R * XYZ;
+				//std::cout << XYZ << "\n";
+				//std::cout << "\n------------------------------------------\n\n";
+
+				x_ = XYZ.at<float>(0, 0);
+				y_ = XYZ.at<float>(1, 0);
+				z_ = XYZ.at<float>(2, 0);
+
+				lon = (std::asin(z_) / CV_PI + 0.5) * equ_h;
+				lat = (std::atan2(y_, x_ + 0.01) / (2 * CV_PI) + 0.5) * equ_w;
+
+				map_x.at<float>(y, x) = lat;
+				map_y.at<float>(y, x) = lon;
+			}
+		}
+		cv::remap(frame, outFrame, map_x, map_y, 0, 2);
+
+		t2 = clock();
+		t_cost = ((double)(t2 - t1)) / CLOCKS_PER_SEC;
+		//--------------------------------------------------------------------------------------------------------------------
+
+		cv::imshow("persp", outFrame);
+		int key = cv::waitKeyEx(0);
+		std::cout << "key: " << key << "\n";
+		std::cout << "time: " << t_cost << "\n";
+		if (key == 2490368) {  //up
+			PHI = PHI + 10;
+			if (PHI >= 90) PHI = 90;
+		}
+		if (key == 2621440) {  //down
+			PHI = PHI - 10;
+			if (PHI <= -90) PHI = -90;
+		}
+		if (key == 2424832) {  //left
+			THETA = THETA - 10;
+		}
+		if (key == 2555904) {  //reight
+			THETA = THETA + 10;
+		}
+		if (key == 27 || key == 32) {  //ESC Space
+			break;
 		}
 	}
-
-	t2 = clock();
-	t_cost = ((double)(t2 - t1)) / CLOCKS_PER_SEC;
-	printf("\n\ntime: %f\n\n", t_cost);
-
-	cv::remap(frame, outFrame, map_x, map_y, 0, 2);
-	//--------------------------------------------------------------------------------------------------------------------
-
-	cv::imshow("persp", outFrame);
-	cv::waitKey(0);
 	cv::destroyAllWindows();
 	return 0;
 }
