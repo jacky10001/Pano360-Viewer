@@ -49,11 +49,15 @@ int main()
 
 		beta = -PHI * CV_PI / 180.0;
 		gamma = THETA * CV_PI / 180.0;
+		std::cout << beta << " " << gamma << "\n\n";
 		Rx = (cv::Mat_<float>(3, 3) << 1, 0, 0, 0, std::cos(0), -1 * std::sin(0), 0, std::sin(0), std::cos(0));
 		Ry = (cv::Mat_<float>(3, 3) << std::cos(beta), 0, -1 * std::sin(beta), 0, 1, 0, std::sin(beta), 0, std::cos(beta));
 		Rz = (cv::Mat_<float>(3, 3) << std::cos(gamma), -1 * std::sin(gamma), 0, std::sin(gamma), std::cos(gamma), 0, 0, 0, 1);
 		R = Rz * Ry * Rx;
 
+		std::cout << Rx << "\n\n";
+		std::cout << Ry << "\n\n";
+		std::cout << Rz << "\n\n";
 		std::cout << R << "\n\n";
 
 		t1 = clock();
